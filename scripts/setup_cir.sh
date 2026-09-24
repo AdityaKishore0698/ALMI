@@ -68,7 +68,7 @@ setup_data() {
   local D=$REPO/ALMI_trans/dataset/ALMI
   log "linking ALMI-X into $D"
   mkdir -p "$X/extracted"
-  if [ -f "$X/texts.tar.gz" ] && [ ! -d "$X/extracted/texts" ]; then tar xzf "$X/texts.tar.gz" -C "$X/extracted"; fi
+  if [ -f "$X/texts.tar.gz" ] && [ ! -d "$X/extracted/text_final" ]; then tar xzf "$X/texts.tar.gz" -C "$X/extracted"; fi
   if [ -f "$X/data.tar.gz" ] && [ ! -f "$X/extracted/.data_done" ]; then
     tar xzf "$X/data.tar.gz" -C "$X/extracted" && touch "$X/extracted/.data_done"
   fi
@@ -76,8 +76,10 @@ setup_data() {
     mkdir -p "$X/extracted/select_motions" && unzip -oq "$X/select_motions.zip" -d "$X/extracted/select_motions" && touch "$X/extracted/.select_done"
   fi
   mkdir -p "$D"
-  [ -d "$X/extracted/texts" ]   && ln -sfn "$X/extracted/texts"   "$D/texts"
-  [ -d "$X/extracted/actions" ] && ln -sfn "$X/extracted/actions" "$D/actions"
+  # The HF archives unpack to new_obs2/ (data.tar.gz) and text_final/ (texts.tar.gz),
+  # not the actions/ and texts/ that ALMI_trans/README.md describes.
+  [ -d "$X/extracted/text_final" ] && ln -sfn "$X/extracted/text_final" "$D/texts"
+  [ -d "$X/extracted/new_obs2" ]   && ln -sfn "$X/extracted/new_obs2"   "$D/actions"
   # the HF split file is called train.txt, the loaders read train_ALMI.txt
   [ -f "$X/train.txt" ] && ln -sfn "$X/train.txt" "$D/train_ALMI.txt"
   ls -la "$D"
