@@ -1,0 +1,33 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# ---- OS / editor ----
+.DS_Store
+.vscode/
+.idea/
+
+# ---- Training outputs (never versioned; sync with rsync if needed) ----
+ALMI_RL/logs/
+ALMI_RL/wandb/
+wandb/
+ALMI_trans/output/
+ALMI_trans/runs/
+
+# ---- Datasets & third-party weights (live outside git; see docs/SETUP.md) ----
+ALMI_trans/dataset/ALMI
+ALMI_trans/pretrained/*.pt
+ALMI_trans/pretrained/*.pth
+Data_Collection/origin_data/*
+Data_Collection/select_data/*
+Data_Collection/obs/*
+!**/.gitkeep
+third_party/
+data/
+
+# ---- Reproduction artefacts too large for git ----
+results/**/*.pt
+results/**/*.mp4
