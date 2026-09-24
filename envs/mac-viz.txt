@@ -1,6 +1,7 @@
 # Local results viewer (macOS arm64, Python 3.10, CPU/MPS torch)
 # Used for: tensorboard curves, MuJoCo playback of exported policies, plotting eval tables.
 torch==2.5.1
+torchvision==0.20.1
 numpy==1.26.4
 scipy
 pandas

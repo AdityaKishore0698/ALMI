@@ -39,7 +39,8 @@ setup_rl() {
   pip install -e "$REPO/ALMI_RL/rsl_rl" --no-deps
   pip install -e "$REPO/ALMI_RL" --no-deps
   log "OpenAI CLIP"
-  pip install "git+https://github.com/openai/CLIP.git@dcba3cb2e2827b402d2701e7e1c7d9fed8a20ef1" --no-deps
+  pip install "setuptools<81" wheel  # CLIP setup.py needs pkg_resources
+  pip install --no-build-isolation --no-deps "git+https://github.com/openai/CLIP.git@dcba3cb2e2827b402d2701e7e1c7d9fed8a20ef1"
   # Isaac Gym's gymtorch JIT build needs libpython3.8.so on the loader path
   mkdir -p "$ENVS/almi-rl/etc/conda/activate.d"
   echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}' > "$ENVS/almi-rl/etc/conda/activate.d/isaacgym.sh"
@@ -55,7 +56,8 @@ setup_trans() {
   log "torch 2.5.1 + cu124"
   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
   pip install -r "$REPO/envs/almi-trans.txt"
-  pip install "git+https://github.com/openai/CLIP.git@dcba3cb2e2827b402d2701e7e1c7d9fed8a20ef1" --no-deps
+  pip install "setuptools<81" wheel  # CLIP setup.py needs pkg_resources
+  pip install --no-build-isolation --no-deps "git+https://github.com/openai/CLIP.git@dcba3cb2e2827b402d2701e7e1c7d9fed8a20ef1"
   log "CLIP ViT-B/32 weights -> ALMI_trans/pretrained/ViT-B-32.pt"
   (cd "$REPO/ALMI_trans" && python -c "import clip; clip.load('ViT-B/32', device='cpu', download_root='pretrained')")
   conda deactivate
