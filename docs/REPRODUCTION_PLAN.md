@@ -19,7 +19,7 @@ Code baseline: upstream `93f3eec` (tag `upstream-base-93f3eec`).
 
 **Phase 0: infrastructure (this commit).** Envs on cir, dataset on cir, a viewer env on the Mac, and the git model (`docs/SETUP.md`).
 
-Gate 0 checks:
+Gate 0 checks (`bash scripts/check_env_cir.sh`; logs go to wandb offline mode):
 1. `python -c "import isaacgym, torch; print(torch.cuda.is_available())"` in `almi-rl`.
 2. Isaac Gym's `examples/joint_monkey.py --headless` runs.
 3. `train.py --task=h1_2_wb_curriculum --headless --num_envs 64 --max_iterations 5` completes.
