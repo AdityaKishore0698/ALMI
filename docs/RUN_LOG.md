@@ -4,3 +4,7 @@ One row per training or evaluation run. Commit the config change before launchin
 
 | Date | Step | Commit | Machine | Command | Wall time | Result / notes |
 |---|---|---|---|---|---|---|
+| 2026-09-25 | gate0 smoke (lower-1) | 3d7b796 | cir | `train.py --task=h1_2_wb_curriculum --run_name=gate0_smoke --headless --num_envs 64 --max_iterations 3` (wandb offline) | ~10 s | PASS: about 670 steps/s, mean reward ≈0.05 |
+| 2026-09-25 | gate0 throughput (lower-1) | 3d7b796 | cir | `train.py --task=h1_2_wb_curriculum --run_name=gate0_4096 --headless --max_iterations 5` | ~30 s | PASS: 4096 envs, about 19.5k steps/s, about 5.0 s/iter (4.7 s collection + 0.35 s learning), peak GPU memory 7.4 GB of 24 GB. That puts 10k iters at about 14 h per policy |
+| 2026-09-25 | gate0 check_env_cir.sh | 3d7b796 + uncommitted setup fix | cir | `bash scripts/check_env_cir.sh` | ~2 min | **5/5 PASS**. ALMI-X split has 81548 names, with 81549 action files and 81549 text files |
+| 2026-09-25 | gate0 CL-20sl smoke | 3d7b796 | cir | `train_almi_cl_20sl.py` (the paper's hyper-parameters from `train_almi_cl_20sl.sh`) plus `--exp-name gate0_cl20 --total-epoch 0 --print-iter 20`, stopped by hand at iteration ~3600 | ~10 min | PASS. The loader keeps only captions containing "wave": 3731 of 81548 sequences. Loss went from 1.57 at iteration 20 to 0.042 at 1k, 0.027 at 2k and 0.016 at 3.6k. About 6.5 it/s, GPU at about 13 GB. The throw-away output is in `ALMI_trans/output/gate0_cl20` |

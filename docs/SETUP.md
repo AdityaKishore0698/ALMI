@@ -14,11 +14,9 @@ Network: both machines sit behind the campus proxy `http://172.31.2.3:8080`. `se
 ## Directory layout on cir
 
 ```
-~/git/ALMI-Open.git          bare repo, the shared "lab" remote
 ~/ALMI/
-├── ALMI-Open/               working copy (remotes: lab, upstream)
+├── ALMI-Open/               working copy (remotes: origin, upstream)
 ├── data/ALMI-X/             HF dataset: data.tar.gz, texts.tar.gz, select_motions.zip, train.txt
-│   ├── download.sh          resumable downloader (curl -C -)
 │   └── extracted/           actions/, texts/, select_motions/
 ├── third_party/isaacgym/    Isaac Gym Preview 4
 └── logs/                    setup and long-job logs
@@ -29,13 +27,16 @@ Nothing under `data/`, `third_party/`, `ALMI_RL/logs/` or `ALMI_trans/output/` g
 ## Version-control model
 
 ```
-upstream (github TeleHuman/ALMI-Open)  ──►  master           pristine upstream, never committed to
-                                           tag upstream-base-93f3eec
-lab  (cir:~/git/ALMI-Open.git)          ◄─►  main             all our work: docs, fixes, eval scripts
+upstream  github.com/TeleHuman/ALMI-Open        ──►  master   pristine upstream, never committed to
+                                                              tag upstream-base-93f3eec
+origin    github.com/AdityaKishore0698/ALMI     ◄─►  main     all our work: docs, fixes, eval scripts
 ```
 
 * All work goes on `main` or on short-lived branches (`exp/<name>`, `fix/<name>`) that merge into `main`.
-* Mac and cir sync only through the `lab` remote: commit on one machine, `git push lab`, then `git pull` on the other. Never copy source files with scp.
+* Mac and cir sync only through GitHub (`origin`). Commit and push on the Mac, then `git pull` on cir. Never copy source files with scp.
+* **Commits are made by hand.** Nothing commits automatically, including Claude, which only prepares changes and suggests commands.
+* cir clones over HTTPS through the proxy. Pulling needs no credentials because the repo is public. Pushing from cir would need a GitHub token, so the normal flow is to commit on the Mac.
+* The repo is **public**. Never commit datasets, checkpoints, wandb runs, Isaac Gym or credentials. `.gitignore` already covers these paths.
 * To pick up new upstream work: `git fetch upstream && git checkout master && git merge --ff-only upstream/master && git checkout main && git merge master`.
 * Each experiment's config change is its own commit. The run name records the commit hash (see `docs/REPRODUCTION_PLAN.md`), so every checkpoint traces back to exact code.
 * Checkpoints and logs stay on cir. To view them on the Mac, pull them with rsync, for example:
@@ -72,6 +73,8 @@ source ~/anaconda3/etc/profile.d/conda.sh && conda activate almi-rl
 cd ~/ALMI/ALMI-Open/ALMI_RL
 tmux new -s almi       # long runs always inside tmux
 ```
+
+Experiment logging: `train.py` always calls `wandb.init`, which needs a Weights & Biases account. Either run `wandb login` once on cir to get online dashboards, or `export WANDB_MODE=offline` to write logs locally only. TensorBoard logs are written either way.
 
 TensorBoard from the Mac: `ssh -L 6006:localhost:6006 cir`, then on cir run
 `tensorboard --logdir ~/ALMI/ALMI-Open/ALMI_RL/logs --port 6006`.
