@@ -1,0 +1,14 @@
+# Local results viewer (macOS arm64, Python 3.10, CPU/MPS torch)
+# Used for: tensorboard curves, MuJoCo playback of exported policies, plotting eval tables.
+torch==2.5.1
+numpy==1.26.4
+scipy
+pandas
+joblib
+PyYAML
+matplotlib
+tensorboard
+mujoco==3.2.3
+ftfy
+regex
+tqdm

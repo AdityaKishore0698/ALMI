@@ -1,0 +1,9 @@
+# ALMI_trans foundation-model training  (cir, Linux x86_64, Python 3.10)
+# Mirrors ALMI_trans/environment.yml (pip section); torch comes from the cu124 index.
+numpy==2.2.4
+tensorboard==2.18.0
+tqdm==4.67.1
+ftfy==6.3.1
+regex==2024.11.6
+pillow==11.2.1
+PyYAML==6.0.2

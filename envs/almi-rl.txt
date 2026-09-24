@@ -1,0 +1,23 @@
+# ALMI_RL training / play + Data_Collection + MuJoCo deploy  (cir, Linux x86_64, Python 3.8)
+# Derived from ALMI_RL/requirements_rl.txt with the conda-only / machine-specific
+# entries removed (mkl-*, gmpy2, editable /home/bcj paths). torch comes from the
+# cu121 index (see scripts/setup_cir.sh). isaacgym, rsl_rl and ALMI_RL are
+# installed editable by the setup script.
+numpy==1.23.5          # isaacgym uses np.float etc. -> must stay < 1.24
+scipy==1.10.1
+pandas==2.0.3
+joblib==1.4.2
+PyYAML==6.0.2
+termcolor==2.4.0
+imageio==2.35.1
+pillow==10.4.0
+matplotlib==3.7.5
+tensorboard==2.14.0
+wandb==0.19.11
+mujoco==3.2.3
+line_profiler==4.2.0
+ninja==1.11.1.4
+# needed by ALMI_trans/deploy (text-conditioned MuJoCo playback)
+ftfy==6.2.3
+regex==2024.11.6
+tqdm==4.66.4
