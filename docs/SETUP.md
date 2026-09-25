@@ -71,7 +71,9 @@ Everything is idempotent, so re-running is safe.
 ssh cir
 source ~/anaconda3/etc/profile.d/conda.sh && conda activate almi-rl
 cd ~/ALMI/ALMI-Open/ALMI_RL
-tmux new -s almi       # long runs always inside tmux
+# Long runs: launch detached with setsid nohup, writing to ~/ALMI/logs/<run>.log and <run>.pid,
+# and use tmux only to watch the log (tmux new -s <run> "tail -F ~/ALMI/logs/<run>.log").
+# Ctrl-C in a viewer then cannot kill training. Stop a run with: kill $(cat ~/ALMI/logs/<run>.pid)
 ```
 
 Experiment logging: `train.py` always calls `wandb.init`, which needs a Weights & Biases account. Either run `wandb login` once on cir to get online dashboards, or `export WANDB_MODE=offline` to write logs locally only. TensorBoard logs are written either way.
