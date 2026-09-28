@@ -1,3 +1,4 @@
+import os
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 
@@ -160,7 +161,7 @@ class H1_2_WholeBodyCfg(LeggedRobotCfg):
         motion_path = '{LEGGED_GYM_ROOT_DIR}/resources/motions/all_wave.pkl'
         # motion_path = '{LEGGED_GYM_ROOT_DIR}/resources/motions/all_motion.pkl'
         
-        init_arm_weight = 0.0
+        init_arm_weight = float(os.environ.get("ALMI_INIT_ARM_WEIGHT", 0.0))  # set when resuming, see docs/REPRODUCTION_GAPS.md G11
         arm_curriculum = True
 
         ## 2.17 add new arm curriculum
