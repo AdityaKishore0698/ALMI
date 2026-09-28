@@ -4,8 +4,8 @@ Found by reading upstream `93f3eec` against arXiv:2504.14305v3. Each gap is mark
 
 | ID | Gap | Type | Plan |
 |---|---|---|---|
-| G1 | No evaluation script for Tables 4–6. The `play_curriculum*.py` scripts only visualize and export. | blocking | Write `scripts/eval_almi.py` from the §6 metric definitions and Table 3 difficulty levels. |
-| G2 | The evaluation set is CMU MoCap (1122 clips) retargeted to H1-2, and it isn't released. | blocking | Retarget CMU clips from AMASS with the PHC pipeline (needs an AMASS licence), or evaluate on held-out ALMI-X motions and report that deviation. |
+| G1 | No evaluation script for Tables 4–6. The `play_curriculum*.py` scripts only visualize and export. | blocking → **addressed** | `ALMI_RL/legged_gym/scripts/eval_almi.py` implements the §6 metrics and Table 3 levels; definitions and guesses are in `docs/EVALUATION.md`. `scripts/eval_all.sh` runs the Table 6 pairs automatically after training. |
+| G2 | The evaluation set is CMU MoCap (1122 clips) retargeted to H1-2, and it isn't released. | deviation | We evaluate on **747 held-out ALMI-X KIT motions**: the 835 selected motions minus the 88 in `all_wave.pkl` (`scripts/prepare_eval_motions.py`). Absolute numbers are therefore not directly comparable with the paper's CMU results. |
 | G3 | Only `all_wave.pkl` (88 motions, with a matching `mean_episode_length.csv`) is released. The paper's curriculum sorts the full retargeted AMASS set. `mean_episode_length_all_motion_new.csv` (8000 rows) refers to an `all_motion.pkl` that isn't shipped. | deviation | Phase 1 trains on `all_wave.pkl`. Later, `select_motions.zip` from ALMI-X may provide a larger motion set; check its format against the env loader. |
 | G4 | Baselines (ALMI-whole, Exbody, ExBody2, OmniH2O), G1 configs and the Appendix E adversary variants aren't released. | blocking for those rows | Out of scope for now. |
 | G5 | No metric scripts for the foundation-model Tables 12–13. Upper-body "success" (waving the correct hand) is judged by eye. | blocking | Log base velocity and survival automatically, and record upper-body success manually from recorded videos. |
