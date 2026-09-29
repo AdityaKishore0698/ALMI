@@ -19,14 +19,18 @@ The upper-body part of each command was "and wave left."
 
 ## Table 13: success and survival
 
-| Command | Lower-body success (ours / paper) | Survival s (ours / paper) | Upper body |
-|---|---|---|---|
-| go forward slowly and wave left | 0 / 1.00 (v̄x −0.05, it stands in place) | 8.0 / 8.0 | arms wave; the hand is not clearly distinguished |
-| go backward moderately and wave right | 1 / 1.00 (v̄x −0.55) | 8.0 / 8.0 | looks almost the same as "wave left" |
-| go right fast and wave both | 1 / 1.00 (v̄y −0.41) | 8.0 / 8.0 | both arms raised: distinct |
+Upper-body success was judged by watching the live MuJoCo viewer, the paper's criterion: "the robot waves the correct hand".
+
+| Command | Lower-body success (ours / paper) | Survival s (ours / paper) | Hand actually waved | Upper-body success |
+|---|---|---|---|---|
+| go forward slowly and wave left | 0 / 1.00 (v̄x −0.05, it stands in place) | 8.0 / 8.0 | left | yes |
+| go backward moderately and wave right | 1 / 1.00 (v̄x −0.55) | 8.0 / 8.0 | both | no |
+| go right fast and wave both | 1 / 1.00 (v̄y −0.41) | 8.0 / 8.0 | left | no |
+
+Upper-body success: **1 of 3 (0.33)**. The paper reports 0.20 / 0.20 / 0.40 for CL-20sl on these commands.
 
 ## Summary
 
-* **Survival: reproduced.** Every one of the 8 commands survives the full 8 s, as CL-20sl does in the paper.
+* **Survival: reproduced.** Every one of the 8 commands survives the full 8 s, as CL-20sl does in the paper. A 30 s run of "go forward fast and wave left" also survived.
 * **Lower-body command following: reproduced.** The movement direction matches the text in 7 of 8 commands, and speeds are in the paper's range. The one miss is "forward slowly", where the robot stands in place.
-* **Upper body: consistent with the paper's weakness.** The paper reports only 20–40 % correct-hand waving for CL-20sl. In our runs "wave left" and "wave right" look almost the same, while "wave both" is visibly different. The upper-body success was judged from frames, as in the paper.
+* **Upper-body command following: reproduced, including the weakness.** 1 of 3 correct-hand waves, inside the paper's 0.20–0.40 for CL-20sl. The short 20-step history makes locomotion stable but the hand instruction is largely ignored. The paper's CL-400sl trades this the other way (100 % correct hand, but falls within 2–4 s).
