@@ -1,0 +1,5 @@
+lower1=/home/anishma/ALMI/ALMI-Open/ALMI_RL/logs/h1_2_wb_curriculum/Sep29_07-45-03_lower1_20260929_25dee09wip_armcurr/model_7300.pt
+upper1=/home/anishma/ALMI/ALMI-Open/ALMI_RL/logs/h1_2_upper/Sep29_09-42-23_upper1_20260929_25dee09wip/model_1600.pt
+lower2=/home/anishma/ALMI/ALMI-Open/ALMI_RL/logs/h1_2_lower/Sep29_11-40-08_lower2_20260929_25dee09wip/model_6800.pt
+upper2=/home/anishma/ALMI/ALMI-Open/ALMI_RL/logs/h1_2_upper/Sep29_13-26-36_upper2_20260929_25dee09wip/model_1100.pt
+lower3=/home/anishma/ALMI/ALMI-Open/ALMI_RL/logs/h1_2_lower/Sep29_15-13-01_lower3_20260929_25dee09wip/model_6800.pt

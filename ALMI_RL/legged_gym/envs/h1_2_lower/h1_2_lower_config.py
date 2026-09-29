@@ -126,14 +126,14 @@ class H1_2_WholeBodyCfg(LeggedRobotCfg):
 
     class commands(LeggedRobotCfg.commands):
         curriculum = True
-        max_curriculum = 1.
+        max_curriculum = float(os.environ.get("ALMI_MAX_CMD_X", 1.0))  # Table 3 hard needs 1.3, see docs/REPRODUCTION_GAPS.md G14
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 8. # time before command are changed[s]
         heading_command = False # if true: compute ang vel command from heading error
         class ranges:
             lin_vel_x = [-0.7, 0.7] # min max [m/s]
-            lin_vel_y = [-0.3, 0.3]   # min max [m/s]
-            ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
+            lin_vel_y = [-float(os.environ.get("ALMI_CMD_Y", 0.3)), float(os.environ.get("ALMI_CMD_Y", 0.3))]   # min max [m/s]
+            ang_vel_yaw = [-float(os.environ.get("ALMI_CMD_YAW", 0.5)), float(os.environ.get("ALMI_CMD_YAW", 0.5))]    # min max [rad/s]
             heading = [-3.14, 3.14]
             
     class asset(LeggedRobotCfg.asset):
