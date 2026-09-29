@@ -24,7 +24,7 @@ args = option_trans.get_args_parser()
 torch.manual_seed(args.seed)
 
 args.out_dir = os.path.join(args.out_dir, f'{args.exp_name}')
-args.vq_dir = os.path.join("./dataset/L2L", f"{args.vq_name}")
+args.vq_dir = os.path.join("./dataset/ALMI", f"{args.vq_name}")  # where dataset_OL.py reads the tokens
 os.makedirs(args.out_dir, exist_ok = True)
 os.makedirs(args.vq_dir, exist_ok = True)
 
@@ -177,6 +177,6 @@ while nb_epoch <= args.total_epoch:
             nb_sample_train = 0
 
     # save model
-    if nb_epoch % 10 ==  0 :
+    if nb_epoch % int(os.environ.get("ALMI_SAVE_EVERY_EPOCHS", 10)) == 0 :
         torch.save({'trans' : trans_encoder.state_dict()}, os.path.join(args.out_dir, 'almi_trans_ol_last.pth'))
         logger.info(f'model last saved {nb_epoch}')

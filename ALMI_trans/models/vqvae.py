@@ -23,6 +23,7 @@ class VQVAE_251(nn.Module):
         self.quant = args.quantizer
         result_map = {
             'l2l': 71,
+            'almi': 71,  # the released scripts pass --dataname almi
         }; input_emb_dim = result_map[args.dataname]
         self.encoder = Encoder(input_emb_dim, output_emb_width, down_t, stride_t, width, depth, dilation_growth_rate, activation=activation, norm=norm)
         self.decoder = Decoder(input_emb_dim, output_emb_width, down_t, stride_t, width, depth, dilation_growth_rate, activation=activation, norm=norm)

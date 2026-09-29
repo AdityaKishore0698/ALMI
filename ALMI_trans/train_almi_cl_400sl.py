@@ -121,6 +121,6 @@ while nb_epoch <= args.total_epoch:
             avg_loss = 0.
 
     # save model
-    if nb_epoch % 10==  0 :
+    if nb_epoch % int(os.environ.get("ALMI_SAVE_EVERY_EPOCHS", 10)) == 0 :
         torch.save({'trans' : trans_encoder.state_dict()}, os.path.join(args.out_dir, 'almi_trans_cl_400sl_last.pth'))
         logger.info(f'model last saved {nb_epoch}')
