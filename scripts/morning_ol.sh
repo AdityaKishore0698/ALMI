@@ -27,9 +27,11 @@ for cmd in "forward slowly and wave left" "backward moderately and wave right" "
     --record "../results/videos/ol_t13_$slug.mp4" --no_viewer 2>/dev/null | grep -E "^generated|^text|^survival|^average" | tee -a "$OUT"
 done
 
-echo "== refresh report figures and PDF"
+echo "== refresh report figures, PDF and Word report"
 ssh cir "tr '\r' '\n' < ~/ALMI/logs/$RUN.log | grep -a 'Train. Iter' | sed 's/.*Train. Iter \([0-9]*\) : Loss. \([0-9.]*\).*/\1 \2/'" > "$ALMI/Thesis_Report/Figures/$RUN.loss"
 cd "$ALMI/Thesis_Report"
 ../ALMI-Open/.venv/bin/python figures_src/make_figures.py
-tectonic -X compile main.tex >/dev/null 2>&1 && echo "report rebuilt: $ALMI/Thesis_Report/main.pdf"
+tectonic -X compile --keep-intermediates main.tex >/dev/null 2>&1 && echo "report rebuilt: $ALMI/Thesis_Report/main.pdf"
+../ALMI-Open/.venv/bin/python docx_build/build_docx.py \
+  "$ALMI/MRM2025016_AdityaKishore_MidSem_Report.docx" 2>/dev/null && echo "Word report rebuilt"
 echo "== done. Raw OL numbers in $OUT"
