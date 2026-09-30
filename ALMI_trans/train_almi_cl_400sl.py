@@ -57,8 +57,12 @@ loss_mse = torch.nn.MSELoss()
 train_loader = dataset_CL_400sl.DATALoader(args.dataname, args.batch_size, args.seq_length)
 train_loader_iter = dataset_CL_400sl.cycle(train_loader)
 
-one_epoch_iters = len(train_loader)
-print(f'one epoch iters: {one_epoch_iters}')
+# Gradient accumulation: ALMI_ACCUM_STEPS mini-batches of --batch-size make one optimizer step,
+# so batch_size * accum reproduces the paper's batch when the GPU is too small for it.
+# One "iteration" below is one optimizer step, as in the original script.
+accum = int(os.environ.get("ALMI_ACCUM_STEPS", 1))
+one_epoch_iters = len(train_loader) // accum
+print(f'one epoch iters: {one_epoch_iters} (effective batch {args.batch_size * accum})')
 
 if args.resume_trans is not None:
     print ('loading transformer checkpoint from {}'.format(args.resume_trans))
@@ -81,36 +85,39 @@ while nb_epoch <= args.total_epoch:
         torch.save({'trans' : trans_encoder.state_dict()}, os.path.join(args.out_dir, f'almi_trans_cl_400sl_{nb_epoch}.pth'))
         logger.info(f'model saved in epoch {nb_epoch}')
     nb_epoch += 1
-    for i in range(one_epoch_iters):
-        batch = next(train_loader_iter)
-        clip_text, obs_actions, motion_len = batch
-        bs = obs_actions.shape[0]
-
-        history = obs_actions[:, :-1, :]
-        if args.add_noise:
-            pass
-        target = obs_actions
-        target, history = target.to(args.device), history.to(args.device)
-        
-        text = clip.tokenize(clip_text, truncate=True).to(args.device)
-        feat_clip_text = clip_model.encode_text(text).float()
-
-        pred_obs_action = trans_encoder(history, feat_clip_text)
-        
-        loss = 0.0
-        for i in range(bs):
-            if args.pred_action:
-                loss += loss_mse(pred_obs_action[i][:motion_len[i] + 1], target[i][:motion_len[i] + 1, -23:-2]) / bs
-            else:
-                loss += loss_mse(pred_obs_action[i][:motion_len[i] + 1], target[i][:motion_len[i] + 1]) / bs
-
-        ## global loss
+    for step in range(one_epoch_iters):
         optimizer.zero_grad()
-        loss.backward()
+        step_loss = 0.0
+        for _ in range(accum):
+            batch = next(train_loader_iter)
+            clip_text, obs_actions, motion_len = batch
+            bs = obs_actions.shape[0]
+
+            history = obs_actions[:, :-1, :]
+            if args.add_noise:
+                pass
+            target = obs_actions
+            target, history = target.to(args.device), history.to(args.device)
+
+            text = clip.tokenize(clip_text, truncate=True).to(args.device)
+            feat_clip_text = clip_model.encode_text(text).float()
+
+            pred_obs_action = trans_encoder(history, feat_clip_text)
+
+            loss = 0.0
+            for i in range(bs):
+                if args.pred_action:
+                    loss += loss_mse(pred_obs_action[i][:motion_len[i] + 1], target[i][:motion_len[i] + 1, -23:-2]) / bs
+                else:
+                    loss += loss_mse(pred_obs_action[i][:motion_len[i] + 1], target[i][:motion_len[i] + 1]) / bs
+
+            ## global loss, averaged over the accumulated mini-batches
+            (loss / accum).backward()
+            step_loss += loss.item() / accum
         optimizer.step()
         scheduler.step()
 
-        avg_loss = avg_loss + loss.item()
+        avg_loss = avg_loss + step_loss
 
         nb_iter += 1
         if nb_iter % args.print_iter ==  0 :
