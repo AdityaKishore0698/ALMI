@@ -9,7 +9,11 @@
 | Isaac Gym | `~/ALMI/third_party/isaacgym` (Preview 4) | not supported on macOS |
 | ALMI-X dataset | `~/ALMI/data/ALMI-X` (raw + `extracted/`) | not downloaded |
 
-Clock: cir's clock is not synchronised and runs about 12 h ahead of real IST (`timedatectl`: "System clock synchronized: no"). Log timestamps from cir are therefore 12 h ahead.
+Clock: the campus network blocks NTP, so `systemd-timesyncd` on cir never syncs ("Packet count: 0"), and the clock ran 12 h ahead until 2026-09-30. To fix it, set the time from an HTTPS `Date` header through the proxy and store it in the hardware clock:
+```bash
+T=$(https_proxy=http://172.31.2.3:8080 curl -sI https://www.google.com | grep -i '^date:' | cut -d' ' -f2- | tr -d '\r')
+sudo date -s "$T" && sudo hwclock --systohc
+```
 
 Network: both machines sit behind the campus proxy `http://172.31.2.3:8080`. `setup_cir.sh` exports it; the dataset download script does too.
 
