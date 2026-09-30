@@ -42,7 +42,7 @@ def main():
     p.add_argument("--text", default="Robot go forward slowly and wave left.")
     p.add_argument("--config", default="deploy/deploy_mujoco/configs/h1_2_21dof_trans.yaml")
     p.add_argument("--seq_len", type=int, default=20, help="history length the model was trained with")
-    p.add_argument("--duration", type=float, default=8.0, help="seconds of simulated time (paper: 8)")
+    p.add_argument("--duration", type=float, default=25.0, help="seconds of simulated time (paper tests use 8)")
     p.add_argument("--record", default="", help="write an MP4 to this path")
     p.add_argument("--no_viewer", action="store_true")
     p.add_argument("--width", type=int, default=1280)
@@ -72,7 +72,7 @@ def main():
     obs = np.zeros(n_obs, np.float32)
     history = torch.zeros(1, a.seq_len, n_obs)
     counter = frame = 0
-    vel_log, fell_at = [], None
+    vel_log, fell_at, upright_steps = [], None, 0
 
     renderer = writer = cam = None
     if a.record:
@@ -125,6 +125,7 @@ def main():
             vel_log.append([v[0], v[1], d.qvel[5]])
             if fell_at is None and (d.qpos[2] < 0.5 or gravity_orientation(quat)[2] > -0.5):
                 fell_at = counter * dt  # pelvis low or torso tilted > 60 degrees
+                upright_steps = len(vel_log)
 
             if writer is not None:
                 renderer.update_scene(d, camera=cam)
@@ -137,11 +138,13 @@ def main():
         writer.close()
     if viewer is not None:
         viewer.close()
-    v = np.mean(vel_log, axis=0) if vel_log else np.zeros(3)
+    # average only while upright: after a fall the robot slides on the ground
+    upright = vel_log[:upright_steps] if fell_at is not None else vel_log
+    v = np.mean(upright, axis=0) if upright else np.zeros(3)
     print(f'text: "{a.text}"')
     print(f"survival time: {fell_at if fell_at is not None else a.duration:.2f} s of {a.duration:.0f} s"
           f"{'' if fell_at is None else ' (fell)'}")
-    print(f"average velocity: vx {v[0]:+.2f} m/s, vy {v[1]:+.2f} m/s, yaw rate {v[2]:+.2f} rad/s")
+    print(f"average velocity while upright: vx {v[0]:+.2f} m/s, vy {v[1]:+.2f} m/s, yaw rate {v[2]:+.2f} rad/s")
     if a.record:
         print(f"video: {a.record}")
 

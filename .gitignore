@@ -31,3 +31,4 @@ data/
 # ---- Reproduction artefacts too large for git ----
 results/**/*.pt
 results/**/*.mp4
+results/videos/
