@@ -10,6 +10,8 @@ Usage:
       --panel ol.mp4 "OL (open-loop)" 1.16 \
       --text "Robot go forward fast and wave both." --out comparison.mp4
 The third value of --panel is the fall time in seconds, or - if the robot never falls.
+--crop keeps the central fraction of each panel's width (the camera tracks the robot, so the
+sides are empty floor); this makes the robots larger when the video is shown on a slide.
 The video ends with the shortest recording. Needs imageio + imageio-ffmpeg + Pillow.
 """
 import argparse
@@ -47,6 +49,7 @@ def main():
     p.add_argument("--panel", nargs=3, action="append", required=True, metavar=("VIDEO", "LABEL", "FELL"))
     p.add_argument("--text", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--crop", type=float, default=1.0, help="fraction of each panel's width to keep")
     a = p.parse_args()
 
     readers = [imageio.get_reader(video) for video, _, _ in a.panel]
@@ -57,7 +60,10 @@ def main():
     writer = imageio.get_writer(a.out, fps=fps, quality=8, macro_block_size=8)
     for i, frames in enumerate(zip(*readers)):
         t = i / fps
-        panels = [label(f[::2, ::2], lab, fell, t, big, small) for f, lab, fell in zip(frames, labels, fells)]
+        w = frames[0].shape[1] // 2
+        x0 = int(w * (1 - a.crop) / 2) // 8 * 8
+        panels = [label(np.ascontiguousarray(f[::2, ::2][:, x0:w - x0]), lab, fell, t, big, small)
+                  for f, lab, fell in zip(frames, labels, fells)]
         spacer = np.full((panels[0].shape[0], 8, 3), 255, np.uint8)
         row = np.concatenate([x for pnl in panels for x in (pnl, spacer)][:-1], axis=1)
         foot = Image.new("RGB", (row.shape[1], 48), (245, 245, 245))
