@@ -86,6 +86,7 @@ def main():
     if a.record:
         import imageio.v2 as imageio
         os.makedirs(os.path.dirname(os.path.abspath(a.record)), exist_ok=True)
+        m.vis.global_.offwidth, m.vis.global_.offheight = 1280, 720  # the model's default buffer is 640x480
         renderer = mujoco.Renderer(m, 720, 1280)
         cam = mujoco.MjvCamera()
         cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING

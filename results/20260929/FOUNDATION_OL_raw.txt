@@ -1,0 +1,13 @@
+== Table 13 commands in MuJoCo
+generated 46 tokens -> 184 steps (3.7 s of motion)
+text: "Robot go forward slowly and wave left."
+survival time: 2.10 s of 8 s (fell)
+average velocity while upright: vx +0.54 m/s, vy +0.03 m/s, yaw rate +0.13 rad/s
+generated 38 tokens -> 152 steps (3.0 s of motion)
+text: "Robot go backward moderately and wave right."
+survival time: 1.30 s of 8 s (fell)
+average velocity while upright: vx +0.16 m/s, vy +0.29 m/s, yaw rate -0.81 rad/s
+generated 56 tokens -> 224 steps (4.5 s of motion)
+text: "Robot go right fast and wave both."
+survival time: 1.42 s of 8 s (fell)
+average velocity while upright: vx +0.51 m/s, vy -0.30 m/s, yaw rate +0.16 rad/s
