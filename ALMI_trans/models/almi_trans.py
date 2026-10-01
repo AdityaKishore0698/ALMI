@@ -15,15 +15,22 @@ class ALMITransformer(nn.Module):
                 n_head=8, 
                 drop_out_rate=0.1, 
                 fc_rate=4,
-                pred_action=False):
+                pred_action=False,
+                chunk=1):
         super().__init__()
         self.trans_base = CrossCondTransBase(num_obs, embed_dim, clip_dim, block_size, num_layers, n_head, drop_out_rate, fc_rate)
         if pred_action:
-            self.trans_head = CrossCondTransHead(num_obs-50, embed_dim, block_size, num_layers, n_head, drop_out_rate, fc_rate)
+            # action chunking: each position predicts the next `chunk` actions (21 each); chunk=1 is the original model
+            self.trans_head = CrossCondTransHead((num_obs-50) * chunk, embed_dim, block_size, num_layers, n_head, drop_out_rate, fc_rate)
         else:
             self.trans_head = CrossCondTransHead(num_obs, embed_dim, block_size, num_layers, n_head, drop_out_rate, fc_rate)
         self.block_size = block_size
         self.num_obs = num_obs
+        self.chunk = chunk
+
+    def set_text_norm(self, mean, std):
+        """Standardise CLIP text features with statistics of the training captions (see CrossCondTransBase)."""
+        self.trans_base.set_text_norm(mean, std)
 
     def get_block_size(self):
         return self.block_size
@@ -138,10 +145,20 @@ class CrossCondTransBase(nn.Module):
         # transformer block
         self.blocks = nn.Sequential(*[Block(embed_dim, block_size, n_head, drop_out_rate, fc_rate) for _ in range(num_layers)])
         self.pos_embed = pos_encoding.PositionEmbedding(block_size, embed_dim, 0.0, False)
+        # CLIP features of the training captions are nearly identical (e.g. cosine 0.996 between "wave left" and
+        # "wave right"), so the hand instruction barely reaches the model. Standardising each feature dimension with
+        # the captions' mean and std makes those differences as large as the rest. Identity unless set_text_norm()
+        # is called; the statistics are then saved in the checkpoint (old checkpoints load unchanged).
+        self.register_buffer("text_mean", torch.zeros(clip_dim), persistent=False)
+        self.register_buffer("text_std", torch.ones(clip_dim), persistent=False)
 
         self.block_size = block_size
 
         self.apply(self._init_weights)
+
+    def set_text_norm(self, mean, std):
+        self.register_buffer("text_mean", mean.detach().clone().float(), persistent=True)
+        self.register_buffer("text_std", std.detach().clone().float(), persistent=True)
 
     def get_block_size(self):
         return self.block_size
@@ -156,6 +173,7 @@ class CrossCondTransBase(nn.Module):
             module.weight.data.fill_(1.0)
     
     def forward(self, idx, clip_feature):
+        clip_feature = (clip_feature - self.text_mean) / self.text_std
         if len(idx) == 0:
             token_embeddings = self.cond_emb(clip_feature).unsqueeze(1)
         else:
@@ -208,3 +226,15 @@ class CrossCondTransHead(nn.Module):
         x = self.ln_f(x)
         out = self.head(x)
         return out
+
+
+def load_trans_state(model, state):
+    """load_state_dict that also restores text-feature statistics saved by set_text_norm()."""
+    if 'trans_base.text_mean' in state:
+        model.set_text_norm(state['trans_base.text_mean'], state['trans_base.text_std'])
+    model.load_state_dict(state, strict=True)
+
+
+def chunk_from_state(state, num_actions=21):
+    """Chunk size of a checkpoint, from the width of its output layer."""
+    return state['trans_head.head.weight'].shape[0] // num_actions

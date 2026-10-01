@@ -46,7 +46,9 @@ trans_encoder = trans.ALMITransformer(num_obs=args.num_obs,
                                 n_head=args.n_head_gpt, 
                                 drop_out_rate=args.drop_out_rate, 
                                 fc_rate=args.ff_rate,
-                                pred_action=args.pred_action)
+                                pred_action=args.pred_action,
+                                chunk=args.chunk)
+assert args.chunk == 1 or args.pred_action, "action chunking predicts actions only (--pred-action)"
 if args.pred_action:
     print("pred only action")
 else:
@@ -55,8 +57,17 @@ else:
 loss_mse = torch.nn.MSELoss()
 
 train_dataset = dataset_CL_20sl.ALMI_CL_20slDataset(args.dataname)
+if args.text_norm:
+    # mean and std of the CLIP features of every distinct training caption
+    captions = sorted({d['text'][0]['caption'] for d in train_dataset.data_dict.values()})
+    with torch.no_grad():
+        feats = torch.cat([clip_model.encode_text(clip.tokenize(captions[i:i + 256], truncate=True).to(args.device)).float()
+                           for i in range(0, len(captions), 256)])
+    trans_encoder.set_text_norm(feats.mean(0).cpu(), feats.std(0).clamp(min=1e-3).cpu())
+    logger.info(f'text features standardised over {len(captions)} distinct captions')
+# a window holds the history plus the `chunk` future actions of its last position
 batch_sampler = dataset_CL_20sl.BatchSampler(train_dataset, 
-                                seq_len=args.seq_length+1,
+                                seq_len=args.seq_length+args.chunk,
                                 batch_size=args.batch_size,
                                 padding_len=0,)
 train_loader = torch.utils.data.DataLoader(
@@ -74,7 +85,7 @@ print(f'one epoch iters: {one_epoch_iters}')
 if args.resume_trans is not None:
     print ('loading transformer checkpoint from {}'.format(args.resume_trans))
     ckpt = torch.load(args.resume_trans, map_location='cpu')
-    trans_encoder.load_state_dict(ckpt['trans'], strict=True)
+    trans.load_trans_state(trans_encoder, ckpt['trans'])
 trans_encoder.train()
 trans_encoder.to(args.device)
 
@@ -97,12 +108,16 @@ while nb_epoch <= args.total_epoch:
         batch = next(train_loader_iter)
         clip_text, obs_actions = batch
 
-        bs = obs_actions.shape[0]; seq_len = obs_actions.shape[1] - 1
+        bs = obs_actions.shape[0]; seq_len = obs_actions.shape[1] - args.chunk
 
-        history = obs_actions[:, :-1, :]
+        history = obs_actions[:, :seq_len, :]
         if args.add_noise:
             pass
-        target = obs_actions[:, 1:, :]
+        if args.chunk > 1:
+            # target of position j: the actions of steps j+1 .. j+chunk -> (bs, seq_len, chunk * 21)
+            target = torch.cat([obs_actions[:, 1 + c:1 + c + seq_len, -23:-2] for c in range(args.chunk)], dim=-1)
+        else:
+            target = obs_actions[:, 1:, :]
         target, history = target.to(args.device), history.to(args.device)
         
         text = clip.tokenize(clip_text, truncate=True).to(args.device)
@@ -110,7 +125,9 @@ while nb_epoch <= args.total_epoch:
 
         pred_obs_action = trans_encoder(history, feat_clip_text)
         
-        if args.pred_action:
+        if args.chunk > 1:
+            loss = loss_mse(pred_obs_action[:, 1:, :], target)
+        elif args.pred_action:
             loss = loss_mse(pred_obs_action[:, 1:, :], target[:, :, -23:-2])
         else:
             loss = loss_mse(pred_obs_action[:, 1:], target)
@@ -124,6 +141,8 @@ while nb_epoch <= args.total_epoch:
         avg_loss = avg_loss + loss.item()
 
         nb_iter += 1
+        if args.max_iter and nb_iter >= args.max_iter:
+            break
         if nb_iter % args.print_iter ==  0 :
             avg_loss = avg_loss / args.print_iter
             writer.add_scalar('./Loss/train', avg_loss, nb_iter)
@@ -134,3 +153,6 @@ while nb_epoch <= args.total_epoch:
     # save model
     torch.save({'trans' : trans_encoder.state_dict()}, os.path.join(args.out_dir, 'almi_trans_cl_20sl_last.pth'))
     logger.info(f'model last saved {nb_epoch}')
+    if args.max_iter and nb_iter >= args.max_iter:
+        logger.info(f'reached --max-iter {args.max_iter}')
+        break

@@ -27,6 +27,8 @@ def main(args):
 
     # load trans model
     his_max_len = args.seq_len
+    ckpt = torch.load(args.model_path, map_location='cpu')
+    chunk = trans.chunk_from_state(ckpt['trans'])
     trans_model = trans.ALMITransformer(num_obs=71, 
                             embed_dim=256, 
                             clip_dim=512, 
@@ -35,11 +37,10 @@ def main(args):
                             n_head=16,
                             drop_out_rate=0.1, 
                             fc_rate=4,
-                            pred_action=True)
-
-    ckpt = torch.load(args.model_path, map_location='cpu')
-
-    trans_model.load_state_dict(ckpt['trans'], strict=True)
+                            pred_action=True,
+                            chunk=chunk)
+    trans.load_trans_state(trans_model, ckpt['trans'])
+    print(f"action chunk {chunk}, text normalisation {'on' if 'trans_base.text_mean' in ckpt['trans'] else 'off'}")
     # trans_model.to("cuda:0")
     total_params = sum(p.numel() for p in trans_model.parameters())
     print(f"successfully load trans model, total params {total_params}")

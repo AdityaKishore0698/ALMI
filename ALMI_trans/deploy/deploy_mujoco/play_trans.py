@@ -10,6 +10,10 @@ Live viewer on macOS needs mjpython:
       --text "Robot go forward slowly and wave left."
 Video only (no window, any python):
   python deploy/deploy_mujoco/play_trans.py --policy ... --text "..." --record videos/fwd_wave_left.mp4 --no_viewer
+Chunked models (output of 21*k per step) are executed with temporal ensembling: the action for the
+current step is the weighted average of the k predictions made for it at the last k steps, with
+weight exp(-m*i) for the prediction made i steps ago (--ensemble_m; ACT uses the opposite direction).
+--log saves the joint positions and executed actions per control step (.npz) for offline scoring.
 Run from ALMI_trans/.
 """
 import argparse
@@ -47,6 +51,8 @@ def main():
     p.add_argument("--no_viewer", action="store_true")
     p.add_argument("--width", type=int, default=1280)
     p.add_argument("--height", type=int, default=720)
+    p.add_argument("--ensemble_m", type=float, default=0.1, help="temporal-ensembling weight decay (chunked models)")
+    p.add_argument("--log", default="", help="save joint positions and actions per control step to this .npz")
     a = p.parse_args()
 
     with open(a.config) as f:
@@ -73,6 +79,9 @@ def main():
     history = torch.zeros(1, a.seq_len, n_obs)
     counter = frame = 0
     vel_log, fell_at, upright_steps = [], None, 0
+    chunk = 0  # read from the first output
+    pending = {}  # control step -> list of (age-weighted) predictions for it
+    qpos_log, act_log = [], []
 
     renderer = writer = cam = None
     if a.record:
@@ -118,9 +127,20 @@ def main():
             else:
                 history = torch.cat((history[:, 1:], o.unsqueeze(1)), dim=1)
             out = policy(history, text_feat).numpy().squeeze()
-            action = (out[frame] if frame < a.seq_len else out[-1]).astype(np.float32)
+            pred = (out[frame] if frame < a.seq_len else out[-1]).astype(np.float32)
+            chunk = chunk or len(pred) // n_act
+            if chunk == 1:
+                action = pred
+            else:  # temporal ensembling over the overlapping chunks
+                for i, a_future in enumerate(pred.reshape(chunk, n_act)):
+                    pending.setdefault(frame + i, []).append(a_future)
+                preds = pending.pop(frame)  # oldest first; the newest was made now (age 0)
+                w = np.exp(-a.ensemble_m * np.arange(len(preds))[::-1])
+                action = (np.average(preds, axis=0, weights=w)).astype(np.float32)
             target = action * cfg["action_scale"] + default
 
+            qpos_log.append(d.qpos[7:].copy())
+            act_log.append(action.copy())
             v = world_to_body(quat, d.qvel[0:3])
             vel_log.append([v[0], v[1], d.qvel[5]])
             if fell_at is None and (d.qpos[2] < 0.5 or gravity_orientation(quat)[2] > -0.5):
@@ -147,6 +167,10 @@ def main():
     print(f"average velocity while upright: vx {v[0]:+.2f} m/s, vy {v[1]:+.2f} m/s, yaw rate {v[2]:+.2f} rad/s")
     if a.record:
         print(f"video: {a.record}")
+    if a.log:
+        os.makedirs(os.path.dirname(os.path.abspath(a.log)), exist_ok=True)
+        np.savez(a.log, text=a.text, qpos=np.array(qpos_log), action=np.array(act_log), dt=dt * decimation,
+                 fell_at=-1.0 if fell_at is None else fell_at, chunk=chunk, ensemble_m=a.ensemble_m)
 
 
 if __name__ == "__main__":
